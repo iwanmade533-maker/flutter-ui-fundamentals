@@ -20,14 +20,21 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class DebuggingPage extends StatelessWidget {
+class DebuggingPage extends StatefulWidget {
   const DebuggingPage({super.key});
+
+  @override
+  State<DebuggingPage> createState() => _DebuggingPageState();
+}
+
+class _DebuggingPageState extends State<DebuggingPage> {
+  bool showDetail = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tahap 16 - Debugging'),
+        title: const Text('Tahap 1 - Local & Shared State'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -40,7 +47,32 @@ class DebuggingPage extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
+          const SizedBox(height: 20),
 
+ElevatedButton(
+  onPressed: () {
+    setState(() {
+      showDetail = !showDetail;
+    });
+  },
+  child: Text(
+    showDetail ? 'Sembunyikan Detail' : 'Tampilkan Detail',
+  ),
+),
+
+if (showDetail) ...[
+  const SizedBox(height: 12),
+  const Card(
+    child: Padding(
+      padding: EdgeInsets.all(16),
+      child: Text(
+        'Local State aktif.\n'
+        'Detail ini ditampilkan menggunakan setState().',
+        textAlign: TextAlign.center,
+      ),
+    ),
+  ),
+],
           const SizedBox(height: 20),
 
           // KASUS A
