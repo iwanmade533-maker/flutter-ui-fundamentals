@@ -19,46 +19,57 @@ class FavoritesPage extends StatefulWidget {
 }
 
 class _FavoritesPageState extends State<FavoritesPage> {
-  // Parent menjadi pemilik shared state.
-  final Set<String> favorites = {};
+  // Single source of truth: state hanya disimpan di parent.
+  bool isFavorite = false;
 
-  void toggleFavorite(String course) {
+  void toggleFavorite() {
     setState(() {
-      if (favorites.contains(course)) {
-        favorites.remove(course);
-      } else {
-        favorites.add(course);
-      }
+      isFavorite = !isFavorite;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Shared Favorites')),
+      appBar: AppBar(
+        title: const Text('Lifting State Up'),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Text(studentName,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              studentName,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             Text('NIM: $studentId'),
-            const SizedBox(height: 16),
-            Text('Total Favorites: ${favorites.length}'),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
-            // Data dan callback diteruskan ke child pertama.
-            FavoriteChild(
-              course: 'Dart Fundamentals',
-              isFavorite: favorites.contains('Dart Fundamentals'),
-              onToggle: () => toggleFavorite('Dart Fundamentals'),
+            Text(
+              'Status favorit: ${isFavorite ? "Aktif" : "Tidak aktif"}',
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 12),
+
+            // Child pertama menerima state dari parent.
+            FavoriteStatusCard(
+              title: 'Widget Pertama',
+              isFavorite: isFavorite,
+              onFavoriteChanged: toggleFavorite,
             ),
 
-            // Data dan callback diteruskan lagi ke child kedua.
-            FavoriteChild(
-              course: 'Flutter UI Fundamentals',
-              isFavorite: favorites.contains('Flutter UI Fundamentals'),
-              onToggle: () => toggleFavorite('Flutter UI Fundamentals'),
+            // Child kedua menerima state yang sama.
+            FavoriteStatusCard(
+              title: 'Widget Kedua',
+              isFavorite: isFavorite,
+              onFavoriteChanged: toggleFavorite,
+            ),
+
+            const SizedBox(height: 16),
+            const Text(
+              'Tekan salah satu ikon hati. '
+              'Kedua widget akan mengikuti status yang sama.',
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -67,30 +78,32 @@ class _FavoritesPageState extends State<FavoritesPage> {
   }
 }
 
-class FavoriteChild extends StatelessWidget {
-  final String course;
+class FavoriteStatusCard extends StatelessWidget {
+  final String title;
   final bool isFavorite;
-  final VoidCallback onToggle;
+  final VoidCallback onFavoriteChanged;
 
-  const FavoriteChild({
+  const FavoriteStatusCard({
     super.key,
-    required this.course,
+    required this.title,
     required this.isFavorite,
-    required this.onToggle,
+    required this.onFavoriteChanged,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
-        title: Text(course),
-        subtitle: Text(isFavorite ? 'Favorit' : 'Belum favorit'),
+        title: Text(title),
+        subtitle: Text(
+          isFavorite ? 'Favorit aktif' : 'Belum menjadi favorit',
+        ),
         trailing: IconButton(
           icon: Icon(
             isFavorite ? Icons.favorite : Icons.favorite_border,
             color: isFavorite ? Colors.red : null,
           ),
-          onPressed: onToggle,
+          onPressed: onFavoriteChanged,
         ),
       ),
     );
