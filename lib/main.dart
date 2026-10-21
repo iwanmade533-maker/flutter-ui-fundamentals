@@ -10,21 +10,12 @@ void main() {
   runApp(
     ChangeNotifierProvider(
       create: (_) => CourseState(),
-      child: const MyApp(),
+      child: const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: CoursePage(),
+      ),
     ),
   );
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: CoursePage(),
-    );
-  }
 }
 
 class CoursePage extends StatelessWidget {
@@ -33,9 +24,7 @@ class CoursePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Provider Demo'),
-      ),
+      appBar: AppBar(title: const Text('Provider: watch & read')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -47,61 +36,70 @@ class CoursePage extends StatelessWidget {
             const Text('NIM: $studentId'),
             const SizedBox(height: 20),
 
-            // Mendengarkan perubahan CourseState.
-            Consumer<CourseState>(
-              builder: (context, state, child) {
-                return Column(
-                  children: [
-                    Text(
-                      'Total Favorites: ${state.favorites.length}',
-                      style: const TextStyle(fontSize: 20),
-                    ),
-                    const SizedBox(height: 12),
-                    courseTile(
-                      state,
-                      'MOB01',
-                      'Dart Fundamentals',
-                    ),
-                    courseTile(
-                      state,
-                      'MOB02',
-                      'Flutter UI Fundamentals',
-                    ),
-                    courseTile(
-                      state,
-                      'MOB03',
-                      'Responsive Layout',
-                    ),
-                  ],
-                );
-              },
-            ),
+            // watch() mendengarkan perubahan jumlah favorit.
+            const FavoriteCount(),
+            const SizedBox(height: 12),
+
+            courseTile('MOB01', 'Dart Fundamentals'),
+            courseTile('MOB02', 'Flutter UI Fundamentals'),
+            courseTile('MOB03', 'Responsive Layout'),
           ],
         ),
       ),
     );
   }
 
-  Widget courseTile(
-    CourseState state,
-    String id,
-    String title,
-  ) {
-    final favorite = state.isFavorite(id);
-
+  Widget courseTile(String id, String title) {
     return Card(
       child: ListTile(
         title: Text(title),
-        subtitle: Text(
-          favorite ? 'Favorit aktif' : 'Belum favorit',
+
+        // Consumer membatasi area UI yang mendengarkan state.
+        subtitle: Consumer<CourseState>(
+          builder: (context, state, child) {
+            return Text(
+              state.isFavorite(id)
+                  ? 'Favorit aktif'
+                  : 'Belum favorit',
+            );
+          },
         ),
-        trailing: IconButton(
-          icon: Icon(
-            favorite ? Icons.favorite : Icons.favorite_border,
-            color: favorite ? Colors.red : null,
-          ),
-          onPressed: () => state.toggleFavorite(id),
+
+        trailing: Consumer<CourseState>(
+          builder: (context, state, child) {
+            return IconButton(
+              icon: Icon(
+                state.isFavorite(id)
+                    ? Icons.favorite
+                    : Icons.favorite_border,
+                color: state.isFavorite(id) ? Colors.red : null,
+              ),
+
+              // read() memanggil aksi tanpa memasang listener.
+              onPressed: () {
+                context.read<CourseState>().toggleFavorite(id);
+              },
+            );
+          },
         ),
+      ),
+    );
+  }
+}
+
+class FavoriteCount extends StatelessWidget {
+  const FavoriteCount({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // Widget ini dibangun ulang ketika CourseState berubah.
+    final state = context.watch<CourseState>();
+
+    return Text(
+      'Total Favorites: ${state.favorites.length}',
+      style: const TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
       ),
     );
   }
