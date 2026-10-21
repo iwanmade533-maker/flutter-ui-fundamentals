@@ -3,15 +3,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 
-import 'package:flutter_ui_fundamentals/course_state.dart';
-import 'package:flutter_ui_fundamentals/main.dart';
+import 'package:flutter_ui_fundamentals/providers/course_provider.dart';
+import 'package:flutter_ui_fundamentals/repositories/course_repository.dart';
+import 'package:flutter_ui_fundamentals/screens/course_page.dart';
+import 'package:flutter_ui_fundamentals/services/course_service.dart';
 
 void main() {
-  testWidgets('Course page menampilkan identitas mahasiswa',
-      (WidgetTester tester) async {
+  testWidgets('Course Explorer menampilkan identitas mahasiswa', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       ChangeNotifierProvider(
-        create: (_) => CourseState(),
+        create: (_) => CourseProvider(
+          CourseRepository(CourseService()),
+        ),
         child: const MaterialApp(
           home: CoursePage(),
         ),
