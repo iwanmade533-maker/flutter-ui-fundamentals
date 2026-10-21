@@ -7,103 +7,101 @@ const String studentId = '2415051113';
 void main() {
   runApp(const MaterialApp(
     debugShowCheckedModeBanner: false,
-    home: FavoritesPage(),
+    home: ValueNotifierPage(),
   ));
 }
 
-class FavoritesPage extends StatefulWidget {
-  const FavoritesPage({super.key});
+class ValueNotifierPage extends StatefulWidget {
+  const ValueNotifierPage({super.key});
 
   @override
-  State<FavoritesPage> createState() => _FavoritesPageState();
+  State<ValueNotifierPage> createState() => _ValueNotifierPageState();
 }
 
-class _FavoritesPageState extends State<FavoritesPage> {
-  // Single source of truth: state hanya disimpan di parent.
-  bool isFavorite = false;
+class _ValueNotifierPageState extends State<ValueNotifierPage> {
+  // State dengan ValueNotifier.
+  final ValueNotifier<int> favoriteCount = ValueNotifier<int>(0);
 
-  void toggleFavorite() {
-    setState(() {
-      isFavorite = !isFavorite;
-    });
+  // State pembanding yang menggunakan setState().
+  int setStateCount = 0;
+
+  @override
+  void dispose() {
+    favoriteCount.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Lifting State Up'),
+        title: const Text('ValueNotifier Demo'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(
-              studentName,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text('NIM: $studentId'),
-            const SizedBox(height: 20),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                studentName,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text('NIM: $studentId'),
+              const SizedBox(height: 30),
 
-            Text(
-              'Status favorit: ${isFavorite ? "Aktif" : "Tidak aktif"}',
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 12),
+              const Text(
+                '1. Menggunakan ValueNotifier',
+                style: TextStyle(fontSize: 18),
+              ),
+              const SizedBox(height: 8),
 
-            // Child pertama menerima state dari parent.
-            FavoriteStatusCard(
-              title: 'Widget Pertama',
-              isFavorite: isFavorite,
-              onFavoriteChanged: toggleFavorite,
-            ),
+              ValueListenableBuilder<int>(
+                valueListenable: favoriteCount,
+                builder: (context, value, child) {
+                  return Text(
+                    'Jumlah Favorite: $value',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  );
+                },
+              ),
 
-            // Child kedua menerima state yang sama.
-            FavoriteStatusCard(
-              title: 'Widget Kedua',
-              isFavorite: isFavorite,
-              onFavoriteChanged: toggleFavorite,
-            ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  favoriteCount.value++;
+                },
+                icon: const Icon(Icons.favorite),
+                label: const Text('Tambah Favorite'),
+              ),
 
-            const SizedBox(height: 16),
-            const Text(
-              'Tekan salah satu ikon hati. '
-              'Kedua widget akan mengikuti status yang sama.',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+              const Divider(height: 40),
 
-class FavoriteStatusCard extends StatelessWidget {
-  final String title;
-  final bool isFavorite;
-  final VoidCallback onFavoriteChanged;
+              const Text(
+                '2. Menggunakan setState()',
+                style: TextStyle(fontSize: 18),
+              ),
+              const SizedBox(height: 8),
 
-  const FavoriteStatusCard({
-    super.key,
-    required this.title,
-    required this.isFavorite,
-    required this.onFavoriteChanged,
-  });
+              Text(
+                'Jumlah Counter: $setStateCount',
+                style: const TextStyle(fontSize: 24),
+              ),
 
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        title: Text(title),
-        subtitle: Text(
-          isFavorite ? 'Favorit aktif' : 'Belum menjadi favorit',
-        ),
-        trailing: IconButton(
-          icon: Icon(
-            isFavorite ? Icons.favorite : Icons.favorite_border,
-            color: isFavorite ? Colors.red : null,
+              ElevatedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    setStateCount++;
+                  });
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Tambah Counter'),
+              ),
+            ],
           ),
-          onPressed: onFavoriteChanged,
         ),
       ),
     );
