@@ -5,21 +5,39 @@ import '../models/course.dart';
 import '../repositories/course_repository.dart';
 
 class CourseProvider extends ChangeNotifier {
-  final CourseRepository repository;
-
   CourseProvider(this.repository);
 
-  List<Course> courses = [];
-  final Set<String> favorites = {};
+  final CourseRepository repository;
 
+  List<Course> courses = [];
   bool isLoading = false;
   String? error;
 
-  int get favoriteCount => favorites.length;
+  final Set<String> _favorites = {};
 
-  bool isFavorite(String id) => favorites.contains(id);
+  bool isFavorite(String code) {
+    return _favorites.contains(code);
+  }
+
+  void toggleFavorite(String code) {
+    if (_favorites.contains(code)) {
+      _favorites.remove(code);
+    } else {
+      _favorites.add(code);
+    }
+
+    notifyListeners();
+  }
+
+  List<Course> get favoriteCourses {
+    return courses
+        .where((course) => _favorites.contains(course.code))
+        .toList();
+  }
 
   Future<void> loadCourses() async {
+    if (isLoading) return;
+
     isLoading = true;
     error = null;
     notifyListeners();
@@ -32,15 +50,5 @@ class CourseProvider extends ChangeNotifier {
       isLoading = false;
       notifyListeners();
     }
-  }
-
-  void toggleFavorite(String id) {
-    if (favorites.contains(id)) {
-      favorites.remove(id);
-    } else {
-      favorites.add(id);
-    }
-
-    notifyListeners();
   }
 }

@@ -25,7 +25,7 @@ void main() {
       ),
     );
 
-    expect(find.text(studentName), findsOneWidget);
-    expect(find.text('NIM: $studentId'), findsOneWidget);
+    expect(find.text('Made Iwan Darma Saputra'), findsOneWidget);
+    expect(find.text('NIM: 2415051113'), findsOneWidget);
   });
 }

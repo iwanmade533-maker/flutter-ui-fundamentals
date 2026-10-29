@@ -11,9 +11,11 @@ void main() {
   runApp(
     ChangeNotifierProvider(
       create: (_) => CourseProvider(
-       CourseRepository(
-  CourseApiService('https://course-api-pearl.vercel.app'),
-)
+        CourseRepository(
+          CourseApiService(
+            'https://course-api-pearl.vercel.app',
+          ),
+        ),
       )..loadCourses(),
       child: const MaterialApp(
         debugShowCheckedModeBanner: false,
