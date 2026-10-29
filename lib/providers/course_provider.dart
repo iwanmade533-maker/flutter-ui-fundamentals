@@ -97,11 +97,48 @@ class CourseProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> deleteCourse(Course course) async {
+    if (isSaving) {
+      throw Exception('Operasi penyimpanan sedang berlangsung.');
+    }
+
+    final courseId = course.id;
+
+    if (courseId == null) {
+      throw Exception('ID course tidak tersedia.');
+    }
+
+    isSaving = true;
+    error = null;
+    notifyListeners();
+
+    try {
+      await repository.deleteCourse(courseId);
+
+      // Hapus course dan favorite lokal setelah DELETE berhasil.
+      courses.removeWhere((item) => item.id == courseId);
+      _favorites.remove(course.code);
+
+      notifyListeners();
+
+      // Sinkronkan daftar dengan data terbaru dari API.
+      try {
+        courses = await repository.getCourses();
+      } catch (e) {
+        // Penghapusan sudah berhasil; daftar lokal tetap diperbarui.
+        error = 'Course terhapus, tetapi refresh gagal: $e';
+      }
+
+      notifyListeners();
+    } finally {
+      isSaving = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> _refreshAfterSave() async {
     try {
-      final updatedCourses = await repository.getCourses();
-
-      courses = updatedCourses;
+      courses = await repository.getCourses();
       error = null;
     } catch (e) {
       error = e.toString();

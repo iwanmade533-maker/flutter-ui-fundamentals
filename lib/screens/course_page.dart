@@ -36,7 +36,9 @@ class CoursePage extends StatelessWidget {
             icon: const Icon(Icons.refresh),
             onPressed: provider.isLoading
                 ? null
-                : () => context.read<CourseProvider>().loadCourses(),
+                : () {
+                    context.read<CourseProvider>().loadCourses();
+                  },
           ),
         ],
       ),
@@ -79,20 +81,10 @@ class CoursePage extends StatelessWidget {
             const LinearProgressIndicator(),
           if (provider.error != null)
             Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Text(
-                    'Terjadi kesalahan: ${provider.error}',
-                  ),
-                  const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: () {
-                      context.read<CourseProvider>().loadCourses();
-                    },
-                    child: const Text('Coba Lagi'),
-                  ),
-                ],
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                'Informasi: ${provider.error}',
+                style: const TextStyle(color: Colors.red),
               ),
             ),
           Expanded(
@@ -129,6 +121,68 @@ class _CourseCard extends StatelessWidget {
 
   final Course course;
 
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Hapus Course?'),
+          content: Text(
+            'Apakah kamu yakin ingin menghapus '
+            '"${course.title}" (${course.code})?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, false);
+              },
+              child: const Text('Batal'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, true);
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Hapus'),
+            ),
+          ],
+        );
+      },
+    );
+
+    // Periksa context setelah dialog ditutup.
+    if (!context.mounted || confirmed != true) return;
+
+    final provider = context.read<CourseProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      await provider.deleteCourse(course);
+
+      // Periksa context setelah proses DELETE selesai.
+      if (!context.mounted) return;
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Course "${course.title}" berhasil dihapus.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Gagal menghapus course: $e'),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CourseProvider>();
@@ -138,15 +192,12 @@ class _CourseCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 6),
       child: ListTile(
         leading: CircleAvatar(
-          child: Text(
-            course.credits.toString(),
-          ),
+          child: Text(course.credits.toString()),
         ),
         title: Text(course.title),
         subtitle: Text(
           '${course.code} • ${course.credits} SKS • ${course.status}',
         ),
-        isThreeLine: false,
         trailing: Wrap(
           spacing: 0,
           children: [
@@ -155,13 +206,17 @@ class _CourseCard extends StatelessWidget {
                   ? 'Hapus dari favorites'
                   : 'Tambahkan ke favorites',
               icon: Icon(
-                isFavorite ? Icons.favorite : Icons.favorite_border,
+                isFavorite
+                    ? Icons.favorite
+                    : Icons.favorite_border,
               ),
-              onPressed: () {
-                context
-                    .read<CourseProvider>()
-                    .toggleFavorite(course.code);
-              },
+              onPressed: provider.isSaving
+                  ? null
+                  : () {
+                      context
+                          .read<CourseProvider>()
+                          .toggleFavorite(course.code);
+                    },
             ),
             IconButton(
               tooltip: 'Edit course',
@@ -178,6 +233,16 @@ class _CourseCard extends StatelessWidget {
                         ),
                       );
                     },
+            ),
+            IconButton(
+              tooltip: 'Hapus course',
+              icon: const Icon(
+                Icons.delete_outline,
+                color: Colors.red,
+              ),
+              onPressed: provider.isSaving
+                  ? null
+                  : () => _confirmDelete(context),
             ),
           ],
         ),
