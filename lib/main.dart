@@ -14,13 +14,13 @@ const String apiBaseUrl =
     'https://course-api-pearl.vercel.app';
 
 void main() {
+  final repository = CourseRepository(
+    CourseApiService(apiBaseUrl),
+  );
+
   runApp(
     ChangeNotifierProvider(
-      create: (_) => CourseProvider(
-        CourseRepository(
-          CourseApiService(apiBaseUrl),
-        ),
-      )..loadCourses(),
+      create: (_) => CourseProvider(repository)..loadCourses(),
       child: const MyApp(),
     ),
   );

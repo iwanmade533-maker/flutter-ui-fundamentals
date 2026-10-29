@@ -46,6 +46,13 @@ class CourseProvider extends ChangeNotifier {
 
     try {
       courses = await repository.getCourses();
+
+      // Buang favorite yang tidak lagi ada di data API.
+      final existingCodes =
+          courses.map((course) => course.code).toSet();
+      _favorites.removeWhere(
+        (code) => !existingCodes.contains(code),
+      );
     } catch (e) {
       error = e.toString();
     } finally {
@@ -56,7 +63,7 @@ class CourseProvider extends ChangeNotifier {
 
   Future<Course> createCourse(Course course) async {
     if (isSaving) {
-      throw Exception('Penyimpanan sedang berlangsung.');
+      throw Exception('Operasi penyimpanan sedang berlangsung.');
     }
 
     isSaving = true;
@@ -81,7 +88,7 @@ class CourseProvider extends ChangeNotifier {
     Course course,
   ) async {
     if (isSaving) {
-      throw Exception('Penyimpanan sedang berlangsung.');
+      throw Exception('Operasi penyimpanan sedang berlangsung.');
     }
 
     isSaving = true;
@@ -115,17 +122,23 @@ class CourseProvider extends ChangeNotifier {
     try {
       await repository.deleteCourse(courseId);
 
-      // Hapus course dan favorite lokal setelah DELETE berhasil.
-      courses.removeWhere((item) => item.id == courseId);
-      _favorites.remove(course.code);
+      courses.removeWhere(
+        (item) => item.id == courseId,
+      );
 
+      _favorites.remove(course.code);
       notifyListeners();
 
-      // Sinkronkan daftar dengan data terbaru dari API.
       try {
         courses = await repository.getCourses();
+
+        final existingCodes =
+            courses.map((item) => item.code).toSet();
+
+        _favorites.removeWhere(
+          (code) => !existingCodes.contains(code),
+        );
       } catch (e) {
-        // Penghapusan sudah berhasil; daftar lokal tetap diperbarui.
         error = 'Course terhapus, tetapi refresh gagal: $e';
       }
 
@@ -139,12 +152,20 @@ class CourseProvider extends ChangeNotifier {
   Future<void> _refreshAfterSave() async {
     try {
       courses = await repository.getCourses();
+
+      final existingCodes =
+          courses.map((course) => course.code).toSet();
+
+      _favorites.removeWhere(
+        (code) => !existingCodes.contains(code),
+      );
+
       error = null;
     } catch (e) {
       error = e.toString();
 
       throw Exception(
-        'Perubahan berhasil dikirim, tetapi daftar course gagal dimuat ulang: $e',
+        'Perubahan dikirim, tetapi daftar course gagal dimuat ulang: $e',
       );
     }
   }
