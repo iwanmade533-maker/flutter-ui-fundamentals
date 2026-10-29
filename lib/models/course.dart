@@ -24,10 +24,12 @@ class Course {
     );
   }
 
-  Map<String, dynamic> toJson() => {
-        'code': code,
-        'title': title,
-        'credits': credits,
-        'status': status,
-      };
+  Map<String, dynamic> toJson() {
+    return {
+      'code': code,
+      'title': title,
+      'credits': credits,
+      'status': status,
+    };
+  }
 }
