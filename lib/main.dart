@@ -1,7 +1,8 @@
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'config/supabase_config.dart';
 import 'providers/course_provider.dart';
 import 'repositories/course_repository.dart';
 import 'screens/course_page.dart';
@@ -10,17 +11,22 @@ import 'services/course_api_service.dart';
 const String studentName = 'Made Iwan Darma Saputra';
 const String studentId = '2415051113';
 
-const String apiBaseUrl =
-    'https://course-api-pearl.vercel.app';
+const String apiBaseUrl = 'https://course-api-pearl.vercel.app';
 
-void main() {
-  final repository = CourseRepository(
-    CourseApiService(apiBaseUrl),
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
   );
+
+  final courseService = CourseApiService(apiBaseUrl);
+  final courseRepository = CourseRepository(courseService);
 
   runApp(
     ChangeNotifierProvider(
-      create: (_) => CourseProvider(repository)..loadCourses(),
+      create: (_) => CourseProvider(courseRepository)..loadCourses(),
       child: const MyApp(),
     ),
   );
