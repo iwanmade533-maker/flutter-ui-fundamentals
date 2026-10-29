@@ -10,6 +10,7 @@ class CourseProvider extends ChangeNotifier {
   final CourseRepository repository;
 
   List<Course> courses = [];
+
   bool isLoading = false;
   bool isSaving = false;
   String? error;
@@ -20,6 +21,12 @@ class CourseProvider extends ChangeNotifier {
     return _favorites.contains(code);
   }
 
+  List<Course> get favoriteCourses {
+    return courses
+        .where((course) => _favorites.contains(course.code))
+        .toList();
+  }
+
   void toggleFavorite(String code) {
     if (_favorites.contains(code)) {
       _favorites.remove(code);
@@ -28,12 +35,6 @@ class CourseProvider extends ChangeNotifier {
     }
 
     notifyListeners();
-  }
-
-  List<Course> get favoriteCourses {
-    return courses
-        .where((course) => _favorites.contains(course.code))
-        .toList();
   }
 
   Future<void> loadCourses() async {
@@ -59,24 +60,55 @@ class CourseProvider extends ChangeNotifier {
     }
 
     isSaving = true;
+    error = null;
     notifyListeners();
 
     try {
       final createdCourse =
           await repository.createCourse(course);
 
-      await loadCourses();
-
-      if (error != null) {
-        throw Exception(
-          'Course tersimpan, tetapi daftar gagal dimuat ulang.',
-        );
-      }
+      await _refreshAfterSave();
 
       return createdCourse;
     } finally {
       isSaving = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> updateCourse(
+    int id,
+    Course course,
+  ) async {
+    if (isSaving) {
+      throw Exception('Penyimpanan sedang berlangsung.');
+    }
+
+    isSaving = true;
+    error = null;
+    notifyListeners();
+
+    try {
+      await repository.updateCourse(id, course);
+      await _refreshAfterSave();
+    } finally {
+      isSaving = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _refreshAfterSave() async {
+    try {
+      final updatedCourses = await repository.getCourses();
+
+      courses = updatedCourses;
+      error = null;
+    } catch (e) {
+      error = e.toString();
+
+      throw Exception(
+        'Perubahan berhasil dikirim, tetapi daftar course gagal dimuat ulang: $e',
+      );
     }
   }
 }

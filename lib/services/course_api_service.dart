@@ -15,22 +15,31 @@ class CourseApiService {
       Uri.parse('$baseUrl/courses'),
     );
 
-    if (response.statusCode != 200) {
+    if (response.statusCode < 200 ||
+        response.statusCode >= 300) {
       throw Exception(
         'Gagal mengambil course: HTTP ${response.statusCode}',
       );
     }
 
-    final List<dynamic> data =
-        jsonDecode(response.body) as List<dynamic>;
+    final decoded = jsonDecode(response.body);
 
-    return data
-        .map(
-          (item) => Course.fromJson(
-            item as Map<String, dynamic>,
-          ),
-        )
-        .toList();
+    final List<dynamic> data;
+
+    if (decoded is List) {
+      data = decoded;
+    } else if (decoded is Map<String, dynamic> &&
+        decoded['courses'] is List) {
+      data = decoded['courses'] as List<dynamic>;
+    } else {
+      throw Exception('Format data course dari API tidak valid.');
+    }
+
+    return data.map((item) {
+      return Course.fromJson(
+        item as Map<String, dynamic>,
+      );
+    }).toList();
   }
 
   Future<Course> createCourse(Course course) async {
@@ -38,19 +47,54 @@ class CourseApiService {
       Uri.parse('$baseUrl/courses'),
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       body: jsonEncode(course.toJson()),
     );
 
-    if (response.statusCode == 200 ||
-        response.statusCode == 201) {
-      return Course.fromJson(
-        jsonDecode(response.body) as Map<String, dynamic>,
+    if (response.statusCode < 200 ||
+        response.statusCode >= 300) {
+      throw Exception(
+        'Gagal menambahkan course: HTTP ${response.statusCode}',
       );
     }
 
-    throw Exception(
-      'Gagal membuat course: HTTP ${response.statusCode}',
+    if (response.body.trim().isNotEmpty) {
+      final decoded = jsonDecode(response.body);
+
+      if (decoded is Map<String, dynamic>) {
+        final result = decoded['course'] is Map<String, dynamic>
+            ? decoded['course'] as Map<String, dynamic>
+            : decoded;
+
+        if (result.containsKey('code') &&
+            result.containsKey('title')) {
+          return Course.fromJson(result);
+        }
+      }
+    }
+
+    return course;
+  }
+
+  Future<void> updateCourse(
+    int id,
+    Course course,
+  ) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/courses/$id'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode(course.toJson()),
     );
+
+    if (response.statusCode < 200 ||
+        response.statusCode >= 300) {
+      throw Exception(
+        'Gagal memperbarui course: HTTP ${response.statusCode}',
+      );
+    }
   }
 }

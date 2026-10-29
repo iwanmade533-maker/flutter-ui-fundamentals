@@ -2,10 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/course.dart';
 import '../providers/course_provider.dart';
-import '../widgets/error_view.dart';
 import 'create_course_page.dart';
-import 'detail_page.dart';
+import 'edit_course_page.dart';
 import 'favorites_page.dart';
 
 class CoursePage extends StatelessWidget {
@@ -20,7 +20,7 @@ class CoursePage extends StatelessWidget {
         title: const Text('Course Explorer'),
         actions: [
           IconButton(
-            tooltip: 'Mata kuliah favorit',
+            tooltip: 'Favorites',
             icon: const Icon(Icons.favorite),
             onPressed: () {
               Navigator.push(
@@ -31,122 +31,156 @@ class CoursePage extends StatelessWidget {
               );
             },
           ),
+          IconButton(
+            tooltip: 'Muat ulang',
+            icon: const Icon(Icons.refresh),
+            onPressed: provider.isLoading
+                ? null
+                : () => context.read<CourseProvider>().loadCourses(),
+          ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Tambah Course',
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const CreateCoursePage(),
-            ),
-          );
-        },
-        child: const Icon(Icons.add),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: provider.isSaving
+            ? null
+            : () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CreateCoursePage(),
+                  ),
+                );
+              },
+        icon: const Icon(Icons.add),
+        label: const Text('Tambah Course'),
       ),
       body: Column(
         children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            color: Theme.of(context)
-                .colorScheme
-                .surfaceContainerHighest,
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Made Iwan Darma Saputra',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Made Iwan Darma Saputra',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 17,
+                    ),
                   ),
-                ),
-                SizedBox(height: 4),
-                Text('NIM: 2415051113'),
-              ],
+                  Text('NIM: 2415051113'),
+                ],
+              ),
             ),
           ),
+          if (provider.isLoading)
+            const LinearProgressIndicator(),
+          if (provider.error != null)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Text(
+                    'Terjadi kesalahan: ${provider.error}',
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      context.read<CourseProvider>().loadCourses();
+                    },
+                    child: const Text('Coba Lagi'),
+                  ),
+                ],
+              ),
+            ),
           Expanded(
-            child: _buildContent(context, provider),
+            child: provider.courses.isEmpty
+                ? Center(
+                    child: provider.isLoading
+                        ? const CircularProgressIndicator()
+                        : const Text('Belum ada course.'),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.only(
+                      left: 12,
+                      right: 12,
+                      bottom: 90,
+                    ),
+                    itemCount: provider.courses.length,
+                    itemBuilder: (context, index) {
+                      final course = provider.courses[index];
+
+                      return _CourseCard(course: course);
+                    },
+                  ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildContent(
-    BuildContext context,
-    CourseProvider provider,
-  ) {
-    if (provider.isLoading && provider.courses.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
-    }
+class _CourseCard extends StatelessWidget {
+  const _CourseCard({
+    required this.course,
+  });
 
-    if (provider.error != null && provider.courses.isEmpty) {
-      return ErrorView(
-        message: provider.error!,
-        onRetry: provider.loadCourses,
-      );
-    }
+  final Course course;
 
-    if (provider.courses.isEmpty) {
-      return const Center(
-        child: Text('Data course belum tersedia'),
-      );
-    }
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<CourseProvider>();
+    final isFavorite = provider.isFavorite(course.code);
 
-    return RefreshIndicator(
-      onRefresh: provider.loadCourses,
-      child: ListView(
-        padding: const EdgeInsets.all(12),
-        children: [
-          if (provider.isLoading)
-            const LinearProgressIndicator(),
-          if (provider.error != null)
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Text(
-                'Gagal memperbarui data: ${provider.error}',
-                style: const TextStyle(color: Colors.red),
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      child: ListTile(
+        leading: CircleAvatar(
+          child: Text(
+            course.credits.toString(),
+          ),
+        ),
+        title: Text(course.title),
+        subtitle: Text(
+          '${course.code} • ${course.credits} SKS • ${course.status}',
+        ),
+        isThreeLine: false,
+        trailing: Wrap(
+          spacing: 0,
+          children: [
+            IconButton(
+              tooltip: isFavorite
+                  ? 'Hapus dari favorites'
+                  : 'Tambahkan ke favorites',
+              icon: Icon(
+                isFavorite ? Icons.favorite : Icons.favorite_border,
               ),
+              onPressed: () {
+                context
+                    .read<CourseProvider>()
+                    .toggleFavorite(course.code);
+              },
             ),
-          for (final course in provider.courses)
-            Card(
-              child: ListTile(
-                leading: CircleAvatar(
-                  child: Text('${course.credits}'),
-                ),
-                title: Text(course.title),
-                subtitle: Text(
-                  '${course.code} • ${course.credits} SKS • ${course.status}',
-                ),
-                trailing: Icon(
-                  provider.isFavorite(course.code)
-                      ? Icons.favorite
-                      : Icons.favorite_border,
-                  color: provider.isFavorite(course.code)
-                      ? Colors.red
-                      : null,
-                ),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          DetailPage(course: course),
-                    ),
-                  );
-                },
-                onLongPress: () {
-                  provider.toggleFavorite(course.code);
-                },
-              ),
+            IconButton(
+              tooltip: 'Edit course',
+              icon: const Icon(Icons.edit),
+              onPressed: provider.isSaving
+                  ? null
+                  : () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => EditCoursePage(
+                            course: course,
+                          ),
+                        ),
+                      );
+                    },
             ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -16,11 +16,15 @@ class Course {
 
   factory Course.fromJson(Map<String, dynamic> json) {
     return Course(
-      id: json['id'] as int?,
-      code: json['code'] as String,
-      title: json['title'] as String,
-      credits: json['credits'] as int,
-      status: (json['status'] as String?) ?? 'planned',
+      id: json['id'] is int
+          ? json['id'] as int
+          : int.tryParse('${json['id']}'),
+      code: json['code']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      credits: json['credits'] is int
+          ? json['credits'] as int
+          : int.tryParse('${json['credits']}') ?? 0,
+      status: json['status']?.toString() ?? 'planned',
     );
   }
 
