@@ -7,19 +7,14 @@ class CourseRepository {
 
   final CourseDataSource dataSource;
 
-  Future<List<Course>> getCourses() {
-    return dataSource.getCourses();
-  }
+  Future<List<Course>> getCourses() => dataSource.getCourses();
 
-  Future<Course> createCourse(Course course) {
-    return dataSource.createCourse(course);
-  }
+  Future<Course> createCourse(Course course) =>
+      dataSource.createCourse(course);
 
-  Future<void> updateCourse(int id, Course course) {
-    return dataSource.updateCourse(id, course);
-  }
+  Future<void> updateCourse(int id, Course course) =>
+      dataSource.updateCourse(id, course);
 
-  Future<void> deleteCourse(int id) {
-    return dataSource.deleteCourse(id);
-  }
+  Future<void> deleteCourse(int id) =>
+      dataSource.deleteCourse(id);
 }
