@@ -40,52 +40,65 @@ class CourseListPage extends StatelessWidget {
       ),
       body: Consumer<CourseProvider>(
         builder: (context, provider, child) {
+          // Loading pertama kali.
           if (provider.isLoading && provider.courses.isEmpty) {
             return const Center(
               child: CircularProgressIndicator(),
             );
           }
 
-          if (provider.error != null &&
-              provider.courses.isEmpty) {
+          // Menampilkan error, termasuk ketika data lama tersedia.
+          if (provider.error != null) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: Colors.red,
-                      size: 48,
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Gagal memuat data course.',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 17,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: Colors.red,
+                        size: 56,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      provider.error!,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: provider.isLoading
-                          ? null
-                          : () => provider.loadCourses(),
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Coba Lagi'),
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Gagal memuat data course.',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 17,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        provider.error!,
+                        textAlign: TextAlign.center,
+                      ),
+                      if (provider.courses.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          'Data sebelumnya masih tersedia, '
+                          'tetapi belum berhasil diperbarui.',
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: provider.isLoading
+                            ? null
+                            : () => provider.loadCourses(),
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Coba Lagi'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
           }
 
+          // Tampilan ketika belum ada data.
           if (provider.courses.isEmpty) {
             return RefreshIndicator(
               onRefresh: provider.loadCourses,
@@ -113,9 +126,11 @@ class CourseListPage extends StatelessWidget {
             );
           }
 
+          // Tampilan daftar course.
           return RefreshIndicator(
             onRefresh: provider.loadCourses,
             child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
               children: [
                 const Card(
