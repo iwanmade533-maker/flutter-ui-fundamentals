@@ -6,8 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/supabase_config.dart';
 import 'providers/course_provider.dart';
 import 'repositories/course_repository.dart';
-import 'screens/course_page.dart';
 import 'services/course_supabase_service.dart';
+import 'screens/responsive_shell.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,7 +61,7 @@ class MyApp extends StatelessWidget {
           centerTitle: false,
         ),
       ),
-      home: const CoursePage(),
+      home: const ResponsiveShell(),
     );
   }
 }
