@@ -6,115 +6,61 @@ import 'package:http/http.dart' as http;
 import '../models/course.dart';
 import 'course_data_source.dart';
 
-class CourseApiService implements CourseDataSource {
-  CourseApiService(this.baseUrl);
+class CourseApiService implements CourseReadDataSource {
+  CourseApiService({
+    required this.baseUrl,
+    required this.apiKey,
+  });
 
   final String baseUrl;
+  final String apiKey;
 
   @override
   Future<List<Course>> getCourses() async {
+    final projectUrl = baseUrl.replaceFirst(
+      RegExp(r'/$'),
+      '',
+    );
+
+    final uri = Uri.parse(
+      '$projectUrl/rest/v1/courses',
+    ).replace(
+      queryParameters: {
+        'select': '*',
+        'order': 'id.asc',
+      },
+    );
+
     final response = await http.get(
-      Uri.parse('$baseUrl/courses'),
-      headers: {'Accept': 'application/json'},
+      uri,
+      headers: {
+        'apikey': apiKey,
+        'Accept': 'application/json',
+      },
     );
 
     if (response.statusCode < 200 ||
         response.statusCode >= 300) {
       throw Exception(
-        'Gagal mengambil course: HTTP ${response.statusCode}',
+        'Gagal mengambil course melalui REST API. '
+        'HTTP ${response.statusCode}: ${response.body}',
       );
     }
 
     final decoded = jsonDecode(response.body);
 
-    final List<dynamic> data;
-
-    if (decoded is List) {
-      data = decoded;
-    } else if (decoded is Map<String, dynamic> &&
-        decoded['courses'] is List) {
-      data = decoded['courses'] as List<dynamic>;
-    } else {
-      throw Exception('Format data course dari API tidak valid.');
-    }
-
-    return data.map((item) {
-      return Course.fromJson(
-        item as Map<String, dynamic>,
-      );
-    }).toList();
-  }
-
-  @override
-  Future<Course> createCourse(Course course) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/courses'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: jsonEncode(course.toJson()),
-    );
-
-    if (response.statusCode < 200 ||
-        response.statusCode >= 300) {
+    if (decoded is! List) {
       throw Exception(
-        'Gagal menambahkan course: HTTP ${response.statusCode}',
+        'Format respons REST API tidak valid.',
       );
     }
 
-    if (response.body.trim().isNotEmpty) {
-      final decoded = jsonDecode(response.body);
-
-      if (decoded is Map<String, dynamic>) {
-        final result = decoded['course'] is Map<String, dynamic>
-            ? decoded['course'] as Map<String, dynamic>
-            : decoded;
-
-        if (result.containsKey('code') &&
-            result.containsKey('title')) {
-          return Course.fromJson(result);
-        }
+    return decoded.map((item) {
+      if (item is! Map<String, dynamic>) {
+        throw Exception('Format data course tidak valid.');
       }
-    }
 
-    return course;
-  }
-
-  @override
-  Future<void> updateCourse(
-    int id,
-    Course course,
-  ) async {
-    final response = await http.put(
-      Uri.parse('$baseUrl/courses/$id'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: jsonEncode(course.toJson()),
-    );
-
-    if (response.statusCode < 200 ||
-        response.statusCode >= 300) {
-      throw Exception(
-        'Gagal memperbarui course: HTTP ${response.statusCode}',
-      );
-    }
-  }
-
-  @override
-  Future<void> deleteCourse(int id) async {
-    final response = await http.delete(
-      Uri.parse('$baseUrl/courses/$id'),
-      headers: {'Accept': 'application/json'},
-    );
-
-    if (response.statusCode < 200 ||
-        response.statusCode >= 300) {
-      throw Exception(
-        'Gagal menghapus course: HTTP ${response.statusCode}',
-      );
-    }
+      return Course.fromJson(item);
+    }).toList();
   }
 }
